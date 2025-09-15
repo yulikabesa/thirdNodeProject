@@ -39,6 +39,7 @@ router.get('', auth, async (req, res) => {
 
 router.get('/me', auth, async (req, res) => {
     try {
+        await req.member.populate('team');
         res.send(req.member.team);
     } catch (e) {
         res.status(500).send();
