@@ -15,7 +15,7 @@ const teamSchema = mongoose.Schema({
     }
 });
 
-teamSchema.virtual('member', {
+teamSchema.virtual('members', {
     ref: 'Member',
     localField: '_id',
     foreignField: 'team'
@@ -27,14 +27,13 @@ teamSchema.pre('remove', async function(next) {
     const Member = require('./member');
     const members = await Member.find({team: team._id});
     console.log(members);
-    members.forEach(async member => {
-        console.log('for each');
+    for (const member of members) {
         if (member.team){
             await member.populate('team');
             member.set('team', undefined);
             await member.save();
         }
-    });
+    }
     next();
 })
 

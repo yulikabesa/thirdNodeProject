@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const validatator = require('validator');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const Team = require('./team');
@@ -25,7 +24,6 @@ const memberSchema = mongoose.Schema({
         type: Number,
         required: true, 
         trim: true,
-        lowercase: true,
         unique: true,
         validate(value) {
             if (value.toString().length !== 7) {
@@ -48,7 +46,7 @@ const memberSchema = mongoose.Schema({
 
 memberSchema.methods.generateAuthToken = async function() {
     const member = this;
-    const token = jwt.sign({ _id: member.id.toString() }, 'loveya');
+    const token = jwt.sign({ _id: member.id.toString() }, process.env.JWT_SECRET);
     
     member.tokens = member.tokens.concat({ token });
     await member.save();
@@ -87,8 +85,6 @@ memberSchema.pre('remove', async function(next) {
     const member = this;
     if (member.team){
         const team = await Team.findOne({_id: member.team});
-        console.log(team.leader);
-        console.log(member._id);
         if( team.leader.equals(member._id)){
             team.set('leader', undefined);
             await team.save();

@@ -6,7 +6,7 @@ const auth = require('../middleware/auth');
 
 // create
 
-router.post('/teams', auth, async (req, res) => {
+router.post('', auth, async (req, res) => {
     if(req.body.leader){
         const leader = await Member.findOne({ IDF_number: req.body.leader});
 
@@ -26,7 +26,7 @@ router.post('/teams', auth, async (req, res) => {
 
 // get all teams
 
-router.get('/teams', auth, async (req, res) => {
+router.get('', auth, async (req, res) => {
     try {
         const teams = await Team.find({});
         res.send(teams);
@@ -37,7 +37,7 @@ router.get('/teams', auth, async (req, res) => {
 
 // get my team
 
-router.get('/teams/me', auth, async (req, res) => {
+router.get('/me', auth, async (req, res) => {
     try {
         res.send(req.member.team);
     } catch (e) {
@@ -47,7 +47,7 @@ router.get('/teams/me', auth, async (req, res) => {
 
 // get team by id
 
-router.get('/teams/:id', auth, async (req, res) => {
+router.get('/:id', auth, async (req, res) => {
     try{
         const team = await Team.findById(req.params.id);
 
@@ -62,7 +62,7 @@ router.get('/teams/:id', auth, async (req, res) => {
 
 // update team by id
 
-router.patch('/teams/:id', auth, async (req, res) => {
+router.patch('/:id', auth, async (req, res) => {
     const updates = Object.keys(req.body);
     const allowedUpdates = ['name','leader'];
     const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
@@ -95,7 +95,7 @@ router.patch('/teams/:id', auth, async (req, res) => {
 
 // delete team by id
 
-router.delete('/teams/:id', auth, async (req, res) => {
+router.delete('/:id', auth, async (req, res) => {
     try {
         const team = await Team.findById(req.params.id);
         if (!team){
@@ -128,11 +128,12 @@ router.get('/teamLeader/:teamId', auth, async (req, res) => {
 router.get('/teamNum/:teamId', auth, async (req, res) => {
     try{
         const team = await Team.findById(req.params.teamId);
-        if (team){
-            const count = await Member.countDocuments({ team: req.params.teamId });
-            return res.send({count});
-        } 
-        res.status(400).send();
+        await team.populate('members');
+        // if (team){
+        //     const count = await Member.countDocuments({ team: req.params.teamId });
+        //     return res.send({count});
+        // } 
+        res.send(team.members.length);
     } catch (e) {
         res.status(400).send(e);
     }

@@ -6,7 +6,7 @@ const auth = require('../middleware/auth');
 
 // sign up
 
-router.post('/members',async (req, res) => {
+router.post('',async (req, res) => {
     if(req.body.team){
         const team = await Team.findOne({ name: req.body.team});
 
@@ -29,7 +29,7 @@ router.post('/members',async (req, res) => {
 
 // login
 
-router.post('/members/login', async (req, res) => {
+router.post('/login', async (req, res) => {
     try{
         const member = await Member.findByCredentials(req.body.IDF_number, req.body.password);
         const token = await member.generateAuthToken();
@@ -41,7 +41,7 @@ router.post('/members/login', async (req, res) => {
 
 // logout
 
-router.post('/members/logout', auth, async (req, res) => {
+router.post('/logout', auth, async (req, res) => {
     try {
         req.member.tokens = req.member.tokens.filter((token) => {
             return token.token !== req.token;
@@ -55,14 +55,14 @@ router.post('/members/logout', auth, async (req, res) => {
 
 // get your member profile
 
-router.get('/members/me', auth, async (req, res) => {
+router.get('/me', auth, async (req, res) => {
     res.send(req.member);
 });
 
 
 // get by id
 
-router.get('/members/:id', auth, async (req, res) => {
+router.get('/:id', auth, async (req, res) => {
     try{
         const member = await Member.findById(req.params.id);
 
@@ -77,25 +77,24 @@ router.get('/members/:id', auth, async (req, res) => {
 
 // update
 
-router.patch('/members/me', auth, async (req, res) => {
+router.patch('/me', auth, async (req, res) => {
     const updates = Object.keys(req.body);
     const allowedUpdates = ['name','IDF_number','password','team'];
     const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
-
-    if(req.body.team){
-        const team = await Team.findOne({ name: req.body.team});
-
-        if (!team){
-            return res.status(400).send();
-        }
-        req.body.team = team._id;
-    }
 
     if (!isValidOperation) {
         return res.status(400).send({ error: 'Invalid updates! '})
     }
 
     try {
+        if(req.body.team){
+        const team = await Team.findOne({ name: req.body.team});
+
+        if (!team){
+            return res.status(400).send();
+        }
+        req.body.team = team._id;
+        }
         updates.forEach((update) => req.member[update] = req.body[update]);
         await req.member.save();
         return res.send(req.member);
@@ -106,7 +105,7 @@ router.patch('/members/me', auth, async (req, res) => {
 
 // delete
 
-router.delete('/members/me', auth, async (req, res) => {
+router.delete('/me', auth, async (req, res) => {
     try {
         await req.member.remove();
         res.send(req.member);
