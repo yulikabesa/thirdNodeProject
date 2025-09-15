@@ -44,6 +44,16 @@ const memberSchema = mongoose.Schema({
     }]
 });
 
+memberSchema.methods.toJSON = function () {
+    const member = this;
+    const memberObject = member.toObject();
+
+    delete memberObject.password;
+    delete memberObject.tokens;
+
+    return memberObject;
+}
+
 memberSchema.methods.generateAuthToken = async function() {
     const member = this;
     const token = jwt.sign({ _id: member.id.toString() }, process.env.JWT_SECRET);
