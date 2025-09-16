@@ -48,15 +48,6 @@ router.get('/me', auth, async (req, res) => {
     }
 });
 
-// get all members that are not leaders
-
-router.get('/notLeaders', auth, async (req, res) => {
-    try {
-        const notLeaders = await Member.find({});
-    } catch(e) {
-        res.status(500).send();
-    }
-});
 // get team by id
 
 router.get('/:id', auth, async (req, res) => {
@@ -98,10 +89,13 @@ router.patch('/:id', auth, async (req, res) => {
 
             if (team.leader){
                 await team.populate('leader');
-                team.leader.isLeader = false;
+                if (team.leader.id !== leader.id){
+                    team.leader.isLeader = false;
+                }
+                team.leader.team = team;
                 await team.leader.save();
             }
-            
+
             leader.isLeader = true;
             await leader.save();
             req.body.leader = leader;

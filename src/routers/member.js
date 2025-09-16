@@ -7,17 +7,16 @@ const auth = require('../middleware/auth');
 // sign up
 
 router.post('',async (req, res) => {
-    if(req.body.team){
-        const team = await Team.findOne({ name: req.body.team});
-
-        if (!team){
-            return res.status(400).send();
-        }
-        req.body.team = team._id;
-    }
-    const member = new Member(req.body);
-
     try {
+        if(req.body.team){
+            const team = await Team.findOne({ name: req.body.team});
+
+            if (!team){
+                return res.status(400).send();
+            }
+            req.body.team = team._id;
+        }
+        const member = new Member(req.body);
         await member.save();
         console.log(member);
         const token = await member.generateAuthToken();
@@ -59,6 +58,20 @@ router.get('/me', auth, async (req, res) => {
     res.send(req.member);
 });
 
+// get all members that are not leaders
+
+router.get('/notLeaders', auth, async (req, res) => {
+    try {
+        const notLeaders = await Member.find({ isLeader: false});
+        const names = [];
+        notLeaders.forEach((member) => {
+            names.push(member.name);
+        })
+        res.send(names);
+    } catch(e) {
+        res.status(500).send();
+    }
+});
 
 // get by id
 
