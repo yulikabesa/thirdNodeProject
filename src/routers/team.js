@@ -13,6 +13,8 @@ router.post('', auth, async (req, res) => {
         if (!leader){
             return res.status(400).send();
         }
+        leader.isLeader = true;
+        await leader.save();
         req.body.leader = leader._id;
     }
     const team = new Team(req.body);
@@ -46,6 +48,15 @@ router.get('/me', auth, async (req, res) => {
     }
 });
 
+// get all members that are not leaders
+
+router.get('/notLeaders', auth, async (req, res) => {
+    try {
+        const notLeaders = await Member.find({});
+    } catch(e) {
+        res.status(500).send();
+    }
+});
 // get team by id
 
 router.get('/:id', auth, async (req, res) => {
@@ -68,15 +79,6 @@ router.patch('/:id', auth, async (req, res) => {
     const allowedUpdates = ['name','leader'];
     const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
 
-    if(req.body.leader){
-        const leader = await Member.findOne({ IDF_number: req.body.leader});
-
-        if (!leader){
-            return res.status(400).send();
-        }
-        req.body.leader = leader;
-    }
-
     if (!isValidOperation) {
         return res.status(400).send({ error: 'Invalid updates! '})
     }
@@ -86,6 +88,25 @@ router.patch('/:id', auth, async (req, res) => {
         if(!team){
             return res.status(404).send();
         }
+
+        if(req.body.leader){
+            const leader = await Member.findOne({ IDF_number: req.body.leader});
+
+            if (!leader){
+                return res.status(400).send();
+            }
+
+            if (team.leader){
+                await team.populate('leader');
+                team.leader.isLeader = false;
+                await team.leader.save();
+            }
+            
+            leader.isLeader = true;
+            await leader.save();
+            req.body.leader = leader;
+        }
+
         updates.forEach((update) => team[update] = req.body[update]);
         await team.save();
         return res.send(team);
@@ -143,7 +164,7 @@ router.get('/teamNum/:teamId', auth, async (req, res) => {
 // receives member and returns which team he belongs to
 
 router.get('/member/:memberId', auth, async (req, res) => {
-    try{
+    try {
         const member = await Member.findById(req.params.memberId);
         if (member){
             await member.populate('team');

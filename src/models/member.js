@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const Team = require('./team');
+const { required } = require('nodemon/lib/config');
 
 const memberSchema = mongoose.Schema({
     name: {
@@ -35,6 +36,11 @@ const memberSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         required: false,
         ref: 'Team'
+    },
+    isLeader: {
+        type: Boolean,
+        default: false
+
     },
     tokens: [{
         token: {

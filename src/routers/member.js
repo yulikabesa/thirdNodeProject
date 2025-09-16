@@ -88,12 +88,12 @@ router.patch('/me', auth, async (req, res) => {
 
     try {
         if(req.body.team){
-        const team = await Team.findOne({ name: req.body.team});
+            const team = await Team.findOne({ name: req.body.team});
 
-        if (!team){
-            return res.status(400).send();
-        }
-        req.body.team = team._id;
+            if (!team){
+                return res.status(400).send();
+            }
+            req.body.team = team._id;
         }
         updates.forEach((update) => req.member[update] = req.body[update]);
         await req.member.save();
