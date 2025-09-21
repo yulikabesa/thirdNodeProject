@@ -2,7 +2,8 @@ const express = require('express');
 const Member = require('../models/member');
 const Team = require('../models/team');
 const router = new express.Router();
-const auth = require('../middleware/auth');
+const {auth, teamleaderAuth} = require('../middleware/auth');
+const moment = require('moment');
 
 // sign up
 
@@ -16,6 +17,7 @@ router.post('',async (req, res) => {
             }
             req.body.team = team._id;
         }
+        req.body.enlistmentDate = new Date(req.body.enlistmentDate);
         const member = new Member(req.body);
         await member.save();
         console.log(member);
@@ -73,6 +75,36 @@ router.get('/notLeaders', auth, async (req, res) => {
     }
 });
 
+// // get all members that enlisted less than a year ago
+
+router.get('/newMembers', auth, async (req, res) => {
+    try {
+        const oneYearAgo = new Date();
+        oneYearAgo.setFullYear(oneYearAgo.getFullYear() -1);
+        const newMembers = await Member.find({ enlistmentDate : { $gt: oneYearAgo.getTime() } }).limit(5).skip(parseInt(req.query.skip));
+        res.send(newMembers);
+    } catch(e) {
+        res.status(500).send();
+    }
+});
+
+// sort members by time in service 
+
+router.get('/dateSortMembers', auth, async (req, res) => {
+    try {
+        const sort = {};
+        if (req.query.sortBy){
+            sort.enlistmentDate = req.query.sortBy === "desc" ? -1 : 1;
+        }
+        const members = await Member.find({}).sort(sort);
+        res.send(members);
+    } catch(e) {
+        res.status(500).send();
+    }
+});
+
+
+
 // get by id
 
 router.get('/:id', auth, async (req, res) => {
@@ -90,7 +122,7 @@ router.get('/:id', auth, async (req, res) => {
 
 // update
 
-router.patch('/me', auth, async (req, res) => {
+router.patch('/:id', [auth, teamleaderAuth], async (req, res) => {
     const updates = Object.keys(req.body);
     const allowedUpdates = ['name','IDF_number','password','team'];
     const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
@@ -100,6 +132,13 @@ router.patch('/me', auth, async (req, res) => {
     }
 
     try {
+        if(!req.params.id){
+            return res.status(400).send();
+        }
+        const member = await Member.findById(req.params.id);
+        if(!member){
+            return res.status(404).send();
+        }
         if(req.body.team){
             const team = await Team.findOne({ name: req.body.team});
 
@@ -108,20 +147,24 @@ router.patch('/me', auth, async (req, res) => {
             }
             req.body.team = team._id;
         }
-        updates.forEach((update) => req.member[update] = req.body[update]);
-        await req.member.save();
-        return res.send(req.member);
+        updates.forEach((update) => member[update] = req.body[update]);
+        await member.save();
+        return res.send(member);
     } catch (e) {
         res.status(400).send(e);
     }
 });
 
-// delete
+// delete by id
 
-router.delete('/me', auth, async (req, res) => {
+router.delete('/:id', [auth, teamleaderAuth], async (req, res) => {
     try {
-        await req.member.remove();
-        res.send(req.member);
+        const member = await Member.findById(req.params.id);
+        if(!member){
+            return res.status(404).send();
+        }
+        await member.remove();
+        res.send(member);
     } catch (e) {
         res.status(500).send();
     }

@@ -42,6 +42,10 @@ const memberSchema = mongoose.Schema({
         default: false
 
     },
+    enlistmentDate: {
+        type: Date,
+        required: true
+    },
     tokens: [{
         token: {
             type: String,

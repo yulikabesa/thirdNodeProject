@@ -21,6 +21,11 @@ teamSchema.virtual('members', {
     foreignField: 'team'
 });
 
+// teamSchema.virtual('size').get(async function() {
+//     await this.populate('members');
+//     return this.members.length.toString();
+// });
+
 // when team is removed, deletes the team propery for every member that was in it
 teamSchema.pre('remove', async function(next) {
     const team = this;

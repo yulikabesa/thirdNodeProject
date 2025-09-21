@@ -20,4 +20,15 @@ const auth = async (req, res, next) => {
     }
 }
 
-module.exports = auth;
+const teamleaderAuth = async (req, res, next) => {
+    try {
+        if (!req.member.isLeader){
+            throw new Error();
+        }
+        next();
+    } catch (e) {
+        res.status(401).send({'error': 'This action can only be done by a team leader'});
+    }
+}
+
+module.exports = {auth, teamleaderAuth};

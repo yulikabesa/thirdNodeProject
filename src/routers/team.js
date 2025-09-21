@@ -2,18 +2,18 @@ const express = require('express');
 const Team = require('../models/team');
 const Member = require('../models/member');
 const router = new express.Router();
-const auth = require('../middleware/auth');
+const {auth, teamleaderAuth} = require('../middleware/auth');
 
 // create
 
-router.post('', auth, async (req, res) => {
+router.post('', [auth, teamleaderAuth], async (req, res) => {
     if(req.body.leader){
         const leader = await Member.findOne({ IDF_number: req.body.leader});
 
         if (!leader){
             return res.status(400).send();
         }
-        leader.isLeader = true;
+        leader.isLeader = true; 
         await leader.save();
         req.body.leader = leader._id;
     }
@@ -48,6 +48,41 @@ router.get('/me', auth, async (req, res) => {
     }
 });
 
+// sort leaders by their soldiers count
+//todo
+
+router.get('/SortLeadersBySoldierNum', auth, async (req, res) => {
+    try {
+        const sort = {};
+        if (req.query.sortBy){
+            sort["size"] = (req.query.sortBy === "desc") ? -1 : 1;
+            console.log(sort);
+        }
+        const teams = await Team.aggregate([
+        {
+            $lookup: {
+                from: "members",
+                localField: '_id', 
+                foreignField: 'team', 
+                as: 'members'
+            }
+        },
+        {
+            $addFields: {
+                size: { $size: "$members" }
+            }
+        },
+        {
+            $sort: sort
+        }
+        ]);
+        const sortedLeaders = await Promise.all(teams.map(async (team) => await Member.findById(team.leader)));
+        res.send(sortedLeaders);
+    } catch(e) {
+        res.status(500).send(e);
+    }
+});
+
 // get team by id
 
 router.get('/:id', auth, async (req, res) => {
@@ -65,7 +100,7 @@ router.get('/:id', auth, async (req, res) => {
 
 // update team by id
 
-router.patch('/:id', auth, async (req, res) => {
+router.patch('/:id', [auth, teamleaderAuth], async (req, res) => {
     const updates = Object.keys(req.body);
     const allowedUpdates = ['name','leader'];
     const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
@@ -111,7 +146,7 @@ router.patch('/:id', auth, async (req, res) => {
 
 // delete team by id
 
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', [auth, teamleaderAuth], async (req, res) => {
     try {
         const team = await Team.findById(req.params.id);
         if (!team){
@@ -145,11 +180,7 @@ router.get('/teamNum/:teamId', auth, async (req, res) => {
     try{
         const team = await Team.findById(req.params.teamId);
         await team.populate('members');
-        // if (team){
-        //     const count = await Member.countDocuments({ team: req.params.teamId });
-        //     return res.send({count});
-        // } 
-        res.send(team.members.length);
+        res.send(team.members.length.toString());
     } catch (e) {
         res.status(400).send(e);
     }
