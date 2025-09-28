@@ -48,41 +48,6 @@ router.get('/me', auth, async (req, res) => {
     }
 });
 
-// sort leaders by their soldiers count
-//todo
-
-router.get('/SortLeadersBySoldierNum', auth, async (req, res) => {
-    try {
-        const sort = {};
-        if (req.query.sortBy){
-            sort["size"] = (req.query.sortBy === "desc") ? -1 : 1;
-            console.log(sort);
-        }
-        const teams = await Team.aggregate([
-        {
-            $lookup: {
-                from: "members",
-                localField: '_id', 
-                foreignField: 'team', 
-                as: 'members'
-            }
-        },
-        {
-            $addFields: {
-                size: { $size: "$members" }
-            }
-        },
-        {
-            $sort: sort
-        }
-        ]);
-        const sortedLeaders = await Promise.all(teams.map(async (team) => await Member.findById(team.leader)));
-        res.send(sortedLeaders);
-    } catch(e) {
-        res.status(500).send(e);
-    }
-});
-
 // get team by id
 
 router.get('/:id', auth, async (req, res) => {
@@ -179,6 +144,9 @@ router.get('/teamLeader/:teamId', auth, async (req, res) => {
 router.get('/teamNum/:teamId', auth, async (req, res) => {
     try{
         const team = await Team.findById(req.params.teamId);
+         if (!team){
+            res.status(400).send();
+        } 
         await team.populate('members');
         res.send(team.members.length.toString());
     } catch (e) {
