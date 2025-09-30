@@ -3,7 +3,7 @@ const Member = require('../models/member');
 const Team = require('../models/team');
 const router = new express.Router();
 const {auth, teamleaderAuth} = require('../middleware/auth');
-const moment = require('moment');
+const { StatusCodes } = require('http-status-codes');
 
 // sign up
 
@@ -13,7 +13,7 @@ router.post('',async (req, res) => {
             const team = await Team.findOne({ name: req.body.team});
 
             if (!team){
-                return res.status(400).send();
+                return res.status(StatusCodes.BAD_REQUEST).send();
             }
             req.body.team = team._id;
         }
@@ -22,9 +22,9 @@ router.post('',async (req, res) => {
         await member.save();
         console.log(member);
         const token = await member.generateAuthToken();
-        res.status(201).send({ member, token });
+        res.status(StatusCodes.CREATED).send({ member, token });
     } catch (e) {
-        res.status(400).send(e);
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).send(e);
     }
 });
 
@@ -36,7 +36,7 @@ router.post('/login', async (req, res) => {
         const token = await member.generateAuthToken();
         res.send({ member, token });
     } catch (e){
-        res.status(400).send();
+        res.status(StatusCodes.BAD_REQUEST).send();
     }
 });
 
@@ -50,7 +50,7 @@ router.post('/logout', auth, async (req, res) => {
         await req.member.save();
         res.send();
     } catch (e) {
-        res.status(500).send();
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).send();
     }
 });
 
@@ -70,7 +70,7 @@ router.get('/notLeaders', auth, async (req, res) => {
         });
         res.send(names);
     } catch(e) {
-        res.status(500).send();
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).send();
     }
 });
 
@@ -84,7 +84,7 @@ router.get('/newMembers', auth, async (req, res) => {
         const newMembers = await Member.find({ enlistmentDate : { $gt: oneYearAgo.getTime() } }).limit(limit).skip(parseInt(req.query.skip));
         res.send(newMembers);
     } catch(e) {
-        res.status(500).send();
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).send();
     }
 });
 
@@ -99,7 +99,7 @@ router.get('/dateSortMembers', auth, async (req, res) => {
         const members = await Member.find({}).sort(sort);
         res.send(members);
     } catch(e) {
-        res.status(500).send();
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).send();
     }
 });
 
@@ -132,7 +132,7 @@ router.get('/SortLeadersBySoldierNum', auth, async (req, res) => {
         const sortedLeaders = await Promise.all(teams.map(async (team) => await Member.findById(team.leader)));
         res.send(sortedLeaders);
     } catch(e) {
-        res.status(500).send(e);
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).send(e);
     }
 });
 
@@ -147,7 +147,7 @@ router.get('/:id', auth, async (req, res) => {
         }
         res.send(member);
     } catch (e) {
-        res.status(500).send();
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).send();
     }
 });
 
@@ -165,13 +165,13 @@ router.patch('/:id', [auth, teamleaderAuth], async (req, res) => {
     try {
         const member = await Member.findById(req.params.id);
         if(!member){
-            return res.status(404).send();
+            return res.status(StatusCodes.NOT_FOUND).send();
         }
         if(req.body.team){
             const team = await Team.findOne({ name: req.body.team});
 
             if (!team){
-                return res.status(400).send();
+                return res.status(StatusCodes.BAD_REQUEST).send();
             }
             req.body.team = team._id;
         }
@@ -179,7 +179,7 @@ router.patch('/:id', [auth, teamleaderAuth], async (req, res) => {
         await member.save();
         return res.send(member);
     } catch (e) {
-        res.status(400).send(e);
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).send(e);
     }
 });
 
@@ -189,12 +189,12 @@ router.delete('/:id', [auth, teamleaderAuth], async (req, res) => {
     try {
         const member = await Member.findById(req.params.id);
         if(!member){
-            return res.status(404).send();
+            return res.status(StatusCodes.NOT_FOUND).send();
         }
         await member.remove();
         res.send(member);
     } catch (e) {
-        res.status(500).send();
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).send();
     }
 });
 

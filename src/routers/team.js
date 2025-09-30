@@ -3,6 +3,7 @@ const Team = require('../models/team');
 const Member = require('../models/member');
 const router = new express.Router();
 const {auth, teamleaderAuth} = require('../middleware/auth');
+const { StatusCodes } = require('http-status-codes');
 
 // create
 
@@ -11,7 +12,7 @@ router.post('', [auth, teamleaderAuth], async (req, res) => {
         const leader = await Member.findOne({ IDF_number: req.body.leader});
 
         if (!leader){
-            return res.status(400).send();
+            return res.status(StatusCodes.BAD_REQUEST).send();
         }
         leader.isLeader = true; 
         await leader.save();
@@ -20,9 +21,9 @@ router.post('', [auth, teamleaderAuth], async (req, res) => {
     const team = new Team(req.body);
     try {
         await team.save();
-        res.status(201).send(team);
+        res.status(StatusCodes.CREATED).send(team);
     } catch (e) {
-        res.status(400).send(e);
+        res.status(StatusCodes.BAD_REQUEST).send(e);
     }
 });
 
@@ -33,7 +34,7 @@ router.get('', auth, async (req, res) => {
         const teams = await Team.find({});
         res.send(teams);
     } catch (e) {
-        res.status(500).send();
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).send();
     }
 });
 
@@ -44,7 +45,7 @@ router.get('/me', auth, async (req, res) => {
         await req.member.populate('team');
         res.send(req.member.team);
     } catch (e) {
-        res.status(500).send();
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).send();
     }
 });
 
@@ -55,11 +56,11 @@ router.get('/:id', auth, async (req, res) => {
         const team = await Team.findById(req.params.id);
 
         if(!team){
-            return res.status(404).send();
+            return res.status(StatusCodes.NOT_FOUND).send();
         }
         res.send(team);
     } catch (e) {
-        res.status(500).send();
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).send();
     }
 });
 
@@ -71,20 +72,20 @@ router.patch('/:id', [auth, teamleaderAuth], async (req, res) => {
     const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
 
     if (!isValidOperation) {
-        return res.status(400).send({ error: 'Invalid updates! '})
+        return res.status(StatusCodes.BAD_REQUEST).send({ error: 'Invalid updates! '})
     }
 
     try {
         const team = await Team.findById(req.params.id);
         if(!team){
-            return res.status(404).send();
+            return res.status(StatusCodes.NOT_FOUND).send();
         }
 
         if(req.body.leader){
             const leader = await Member.findOne({ IDF_number: req.body.leader});
 
             if (!leader){
-                return res.status(400).send();
+                return res.status(StatusCodes.BAD_REQUEST).send();
             }
 
             if (team.leader){
@@ -105,7 +106,7 @@ router.patch('/:id', [auth, teamleaderAuth], async (req, res) => {
         await team.save();
         return res.send(team);
     } catch (e) {
-        res.status(400).send(e);
+        res.status(StatusCodes.BAD_REQUEST).send(e);
     }
 });
 
@@ -115,12 +116,12 @@ router.delete('/:id', [auth, teamleaderAuth], async (req, res) => {
     try {
         const team = await Team.findById(req.params.id);
         if (!team){
-            return res.status(404).send();
+            return res.status(StatusCodes.NOT_FOUND).send();
         }
         await team.remove();
         res.send(team);
     } catch (e) {
-        res.status(500).send(e);
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).send(e);
     }
 });
 
@@ -133,9 +134,9 @@ router.get('/teamLeader/:teamId', auth, async (req, res) => {
             await team.populate('leader');
             return res.send({leader: team.leader.name});
         }  
-        res.status(400).send();
+        res.status(StatusCodes.BAD_REQUEST).send();
     } catch (e) {
-        res.status(400).send(e);
+        res.status(StatusCodes.BAD_REQUEST).send(e);
     }
 });
 
@@ -145,12 +146,12 @@ router.get('/teamNum/:teamId', auth, async (req, res) => {
     try{
         const team = await Team.findById(req.params.teamId);
          if (!team){
-            res.status(400).send();
+            res.status(StatusCodes.BAD_REQUEST).send();
         } 
         await team.populate('members');
         res.send(team.members.length.toString());
     } catch (e) {
-        res.status(400).send(e);
+        res.status(StatusCodes.BAD_REQUEST).send(e);
     }
 });
 
@@ -163,9 +164,9 @@ router.get('/member/:memberId', auth, async (req, res) => {
             await member.populate('team');
             return res.send({team: member.team.name});
         }  
-        res.status(400).send();
+        res.status(StatusCodes.BAD_REQUEST).send();
     } catch (e) {
-        res.status(500).send(e);
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).send(e);
     }
 });
 
