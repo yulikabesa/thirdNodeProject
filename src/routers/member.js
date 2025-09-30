@@ -105,7 +105,7 @@ router.get('/dateSortMembers', auth, async (req, res) => {
 
 // sort leaders by their soldiers count
 
-router.get('/SortLeadersBySoldierNum', auth, async (req, res) => {
+router.get('/LeadersBySoldierNum', auth, async (req, res) => {
     try {
         const sort = {};
         if (req.query.sortBy){
