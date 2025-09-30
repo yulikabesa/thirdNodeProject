@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const Member = require('../models/member');
+const { StatusCodes } = require('http-status-codes');
 
 const auth = async (req, res, next) => {
     try {
@@ -16,13 +17,13 @@ const auth = async (req, res, next) => {
         next();
 
     } catch (e) {
-        res.status(401).send({'error': 'Please authenticate'});
+        res.status(StatusCodes.UNAUTHORIZED).send({'error': 'Please authenticate'});
     }
 }
 
 const teamleaderAuth = (req, res, next) => {
     if (!req.member.isLeader){
-        res.status(401).send({'error': 'This action can only be done by a team leader'});
+        res.status(StatusCodes.UNAUTHORIZED).send({'error': 'This action can only be done by a team leader'});
     }
     next();
 }
